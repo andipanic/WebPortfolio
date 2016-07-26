@@ -1,0 +1,28 @@
+<html>
+    <head>
+        <title>Title</title>
+<style>
+html, body {
+    padding: 0;
+    margin: 0;
+}
+</style>
+    </head>
+    <body>
+    <script>
+    var canvas = document.createElement('canvas');
+    var c = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth,
+    canvas.height = window.innerHeight;
+
+    c.fillStyle = 'black';
+    c.fillRect(0, 0, canvas.width, canvas.height);
+
+    document.body.appendChild(canvas);
+
+    </script>
+    </body>
+</html>
+
+        

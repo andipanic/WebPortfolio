@@ -1,6 +1,6 @@
 <html>
     <head>
-        <title>Dungeon Generator</title>
+        <title>Color Crash</title>
 <style>
 html, body {
     padding: 0;
@@ -13,9 +13,10 @@ html, body {
     <script>
     var canvas = document.createElement('canvas');
     var c = canvas.getContext('2d');
+    var SIZE = 32;
 
-    canvas.width = Math.floor((window.innerWidth ) / 16) * 16,
-    canvas.height = window.innerHeight;
+    canvas.width = SIZE * 16;
+    canvas.height = SIZE * SIZE;
 
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
@@ -29,50 +30,55 @@ html, body {
         log_div.innerHTML = str;
     }
 
+
     var Player = {
-        x: 6 * 16,
-        y: 6 * 16,
-        vy: 4,
+        radius: SIZE / 2,
+        x: 6 * SIZE,
+        y: 6 * SIZE,
+        vy: 0,
         vx: 4,
-        g: 1.01,
-        keyDown: null,
+        g: .1,
         color: 'rgba(255, 255, 255, 1)',
-        draw: function () {
+        update: function () {
+            this.vy += this.g;
             this.y += this.vy;
             // the key down is throwing off our 
             // direction switching.
-            if (this.keyDown == 37) {
+            if (KeyHandler.pressed[65] || KeyHandler.pressed[37]) {
                 this.x -= Math.abs(this.vx);
             }
-            if (this.keyDown == 39) {
+            if (KeyHandler.pressed[68] || KeyHandler.pressed[39]) {
                 this.x += Math.abs(this.vx);
             }
-            if (this.x + 16 >= canvas.width) {
+            if (this.x + this.radius >= canvas.width) {
                 this.vx = -this.vx;
             }
-            if (this.x - 16 <= 0) {
+            if (this.x - this.radius <= 0) {
                 this.vx = Math.abs(this.vx);
             }
-            var colorBelow = c.getImageData(this.x, this.y + 8, 1, 1);
+            var colorBelow = c.getImageData(this.x, this.y + this.radius, 1, 1);
             var colorInside = c.getImageData(this.x, this.y, 1, 1);
             var [r, g, b, a] = colorBelow.data.slice(0, 4);
             if (r+g+b+a != 255 && r+g+b+a != 0 && Colors.buildRGBA(r,g,b,a) != this.color) {
                //this.color = Colors.buildRGBA(r,g,b,a);
-                console.log(this.color);
                 this.vy = 0;
+                this.g = 0;
             }else{
-               this.vy = 4;
+                this.g = .1;
             } 
             var [r, g, b, a] = colorInside.data.slice(0,4);
             if (this.x >= ColorChanger.x && this.x < ColorChanger.x + ColorChanger.width) {
                 this.color = Colors.buildRGBA(r,g,b,a);
+                Colors.shuffle();
             }
             if (r+g+b+a == 0){
                 this.y = 0;
                 map = Map.gen_map();
             }
+        },
+        draw: function () {
             c.beginPath();
-            c.arc(this.x, this.y, 8, 0, 2*Math.PI, false);
+            c.arc(this.x, this.y, this.radius, 0, 2*Math.PI, false);
             c.fillStyle = this.color;
             c.fill();
             c.strokeStyle = this.color;
@@ -81,6 +87,21 @@ html, body {
         
     }
 
+
+    var KeyHandler = {
+        pressed: [],
+        keyDown: function (e) {
+            this.pressed[e.keyCode] = true;
+        },
+        keyUp: function (e) {
+            this.pressed[e.keyCode] = false;
+        },
+    }
+
+window.addEventListener('keydown', function (event) { KeyHandler.keyDown(event); }, false);
+window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, false);
+
+
     var Colors = {
         colors: [],
         buildRGBA: function (r, g, b, a) {
@@ -88,26 +109,35 @@ html, body {
         },
         gen_color: function () {
             var color = [];
-            if (this.colors.length >= (canvas.width / 16) * 4) {
-                return this.colors[Math.floor(Math.random() * this.colors.length)];
-            }
             for (var i = 0; i < 3; i++) {
                 color.push(Math.floor(Math.random() * 255));    
             }
             this.colors.push(this.buildRGBA(color[0], color[1], color[2], 255));
             return this.buildRGBA(color[0], color[1], color[2], 255);
+        },
+        shuffle: function () {
+            console.log(this.colors);
+            var j, x, i;
+            for (i = this.colors.length; i; i--) {
+                j = Math.floor(Math.random() * i);
+                x = this.colors[i - 1];
+                this.colors[i - 1] = this.colors[j];
+                this.colors[j] = x;
+            }
+            console.log(this.colors);
+
         }
     }
 
     var Tile = function () {
         this.walkable = true;
-        this.color = Colors.gen_color();
-        this.size = 16;
+        this.color = null;
+        this.size = SIZE;
     };
 
     var Map = {
-        width: canvas.width / 16,
-        height: canvas.height / 16,
+        width: canvas.width / SIZE,
+        height: canvas.height / SIZE,
 
         gen_map: function () {
             var map = []
@@ -118,6 +148,7 @@ html, body {
 
                     if (y % 8 == 7) {
                         map[x][y].walkable = false;
+                        map[x][y].color = Colors.gen_color();
                     }
                 }
             }
@@ -129,43 +160,54 @@ html, body {
                     tile = map[x][y];
                     if (!tile.walkable) {
                         c.fillStyle = tile.color;
-                        c.fillRect(x * 16, y * 16, 16, 16);
+                        c.fillRect(x * SIZE, y * SIZE, SIZE, SIZE);
                     }
                 }
             }
         }
     }
 
-    var map = Map.gen_map();
-
     var ColorChanger = {
         x: (canvas.width / 2) - 4,
+        vx: 1,
         width: 8,
+        color: 'white',
         draw: function () {
-            c.fillStyle = NewColor;
+            c.fillStyle = this.color;
             c.fillRect(this.x, 0, this.width, canvas.height);
+        },
+        update: function () {
+            this.x += this.vx;
+            if (this.x <= 0) {
+                this.vx *= -this.vx;
+            }
+            if (this.x >= canvas.width) {
+                this.vx *= -this.vx;
+            }
+            
+            this.color = Colors.colors.pop();
         }
     }
 
-    var NewColor = 'white';
-    setInterval(function () {
-        NewColor = Colors.colors[Math.floor(Math.random() * Colors.colors.length)];
+
+    // Timer stuffs
+    setInterval( function () {
+        ColorChanger.update();
     }, 2000);
 
-    document.onkeydown = checkKey;
-
-    function checkKey(e) {
-        var event = window.event ? window.event : e;
-        Player.keyDown = event.keyCode;
-    }
-
+    var map = Map.gen_map();
     setInterval(function () {
         c.fillStyle = 'black';
         c.fillRect(0, 0, canvas.width, canvas.height);
         ColorChanger.draw();
         Map.render(map);
+        Player.update();
         Player.draw();
-        log(Colors.colors.length);
+        if (Colors.colors.length) {
+            c.fillText(Colors.colors.length, 10, 10);
+        }else{
+            c.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+        }
     }, 1000/60);
 
     </script>

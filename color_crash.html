@@ -44,68 +44,6 @@ div#info {
     }
 
 
-    var Player = {
-        radius: SIZE / 2,
-        x: 6 * SIZE,
-        y: 6 * SIZE,
-        vy: 0,
-        vx: 4,
-        g: .1,
-        color: 'rgba(255, 255, 255, 1)',
-        score: 0,
-        colors_collected: [],
-        level: 1,
-        update: function () {
-            this.vy += this.g;
-            this.y += this.vy;
-            // Tidy all the stuff below this up...
-            if (KeyHandler.pressed[65] || KeyHandler.pressed[37]) {
-                this.x -= Math.abs(this.vx);
-            }
-            if (KeyHandler.pressed[68] || KeyHandler.pressed[39]) {
-                this.x += Math.abs(this.vx);
-            }
-            if (this.x + this.radius >= canvas.width) {
-                this.x = canvas.width - this.radius;
-            }
-            if (this.x - this.radius <= 0) {
-                this.x = this.radius;
-            }
-            var colorBelow = c.getImageData(this.x, this.y + this.radius, 1, 1);
-            var colorInside = c.getImageData(this.x, this.y, 1, 1);
-            var [r, g, b, a] = colorBelow.data.slice(0, 4);
-            if (r+g+b+a != 255 && r+g+b+a != 0 && Colors.buildRGBA(r,g,b,a) != this.color) {
-                this.vy = 0;
-                this.g = 0;
-            }else{
-                this.g = .1;
-            } 
-            var [r, g, b, a] = colorInside.data.slice(0,4);
-            if (this.x >= ColorChanger.x && this.x < ColorChanger.x + ColorChanger.width) {
-                this.color = Colors.buildRGBA(r,g,b,a);
-                if (!this.colors_collected.includes(this.color)){
-                    this.colors_collected.push(this.color);
-                }
-                Colors.shuffle();
-            }
-            if (r+g+b+a == 0){
-                this.level += 1;
-                this.score += 10;
-                this.y = 0;
-                map = Map.gen_map();
-            }
-        },
-        draw: function () {
-            c.beginPath();
-            c.arc(this.x, this.y, this.radius, 0, 2*Math.PI, false);
-            c.fillStyle = this.color;
-            c.fill();
-            c.strokeStyle = this.color;
-            c.stroke();
-        }
-        
-    }
-
 
     var KeyHandler = {
         pressed: [],
@@ -135,7 +73,6 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
             return this.buildRGBA(color[0], color[1], color[2], 255);
         },
         shuffle: function () {
-            console.log(this.colors);
             var j, x, i;
             for (i = this.colors.length; i; i--) {
                 j = Math.floor(Math.random() * i);
@@ -143,8 +80,6 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
                 this.colors[i - 1] = this.colors[j];
                 this.colors[j] = x;
             }
-            console.log(this.colors);
-
         }
     }
 
@@ -152,26 +87,32 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
         this.walkable = true;
         this.color = null;
         this.size = SIZE;
+        this.x = null;
+        this.y = null;
     };
 
     var Map = {
         width: canvas.width / SIZE,
         height: canvas.height / SIZE,
-
+        map: [],
         gen_map: function () {
-            var map = []
             for (var x = 0; x < this.width; x++) {
-                map[x] = [];
+                this.map[x] = [];
                 for (var y = 0; y < this.height; y++) {
-                    map[x][y] = new Tile;
+                    this.map[x][y] = new Tile;
+                    var tile = this.map[x][y];
+                    tile.x = x * SIZE;
+                    tile.y = y * SIZE;
 
                     if (y % 8 == 7) {
-                        map[x][y].walkable = false;
-                        map[x][y].color = Colors.gen_color();
+                        tile.walkable = false;
+                        tile.color = Colors.gen_color();
+                    }else{
+                        tile.color = 'rgba(0, 0, 0, 0)';
                     }
                 }
             }
-            return map;
+            return this.map;
         },
         render: function (map) {
             for (var x in map) {
@@ -179,7 +120,7 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
                     tile = map[x][y];
                     if (!tile.walkable) {
                         c.fillStyle = tile.color;
-                        c.fillRect(x * SIZE, y * SIZE, SIZE, SIZE);
+                        c.fillRect(tile.x, tile.y, SIZE, SIZE);
                     }
                 }
             }
@@ -226,19 +167,114 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
  
     }
 
+    var map = Map.gen_map();
+
+    var Player = {
+        radius: SIZE / 2,
+        x: 6 * SIZE,
+        y: 6 * SIZE,
+        vy: 0,
+        vx: 4,
+        g: .1,
+        color: 'rgba(255, 255, 255, 1)',
+        score: 0,
+        colors_collected: [],
+        level: 1,
+        update: function () {
+            this.vy += this.g;
+            this.y += this.vy;
+            // Tidy all the stuff below this up...
+            if (KeyHandler.pressed[65] || KeyHandler.pressed[37]) {
+                this.x -= Math.abs(this.vx);
+            }
+            if (KeyHandler.pressed[68] || KeyHandler.pressed[39]) {
+                this.x += Math.abs(this.vx);
+            }
+            if (this.x + this.radius >= canvas.width) {
+                this.x = canvas.width - this.radius;
+            }
+            if (this.x - this.radius <= 0) {
+                this.x = this.radius;
+            }
+
+            // start of collision stuff (needs to be fixed)
+            var colorBelow = c.getImageData(this.x, this.y + this.radius, 1, 1);
+            var colorInside = c.getImageData(this.x, this.y, 1, 1);
+            var [r, g, b, a] = colorBelow.data.slice(0, 4);
+            if (r+g+b+a != 255 && r+g+b+a != 0 && Colors.buildRGBA(r,g,b,a) != this.color) {
+                this.vy = 0;
+                this.g = 0;
+            }else{
+                this.g = .1;
+            } 
+            var [r, g, b, a] = colorInside.data.slice(0,4);
+            if (this.x >= ColorChanger.x && this.x < ColorChanger.x + ColorChanger.width) {
+                this.color = Colors.buildRGBA(r,g,b,a);
+                if (!this.colors_collected.includes(this.color)){
+                    this.colors_collected.push(this.color);
+                }
+                Colors.shuffle();
+            }
+            if (r+g+b+a == 0){
+                this.level += 1;
+                this.score += 10;
+                this.y = 0;
+                map = Map.gen_map();
+            }
+            // end of collision stuff?
+        },
+        checkCollisions: function (map) {
+            for (var x = 0; x < map.length; x++) {
+                for (var y = 0; y < map[x].length; y++) {
+                    var tile = map[x][y];
+                    if (!tile.walkable) {
+                        if (this.distance(tile)) {
+                            if (this.color == tile.color) {
+                                tile.color = 'black';
+                            }else{
+                                this.y = tile.y - this.radius;
+                            }
+                        }
+                    }
+                }
+            }
+
+        },
+        draw: function () {
+            c.beginPath();
+            c.arc(this.x, this.y, this.radius, 0, 2*Math.PI, false);
+            c.fillStyle = this.color;
+            c.fill();
+            c.strokeStyle = this.color;
+            c.stroke();
+        },
+        distance: function (entity) {
+            var x = entity.x - this.x,
+                y = entity.y - this.y,
+                dist = Math.sqrt(x * x + y * y),
+                collision = false;
+
+            if (dist <= this.radius) {
+                collision = true;
+            }
+            return collision;
+        }
+    }
+
+
     
     // Timer stuffs
     setInterval( function () {
         ColorChanger.update();
     }, 2000);
 
-    var map = Map.gen_map();
     setInterval(function () {
         c.fillStyle = 'black';
         c.fillRect(0, 0, canvas.width, canvas.height);
         ColorChanger.draw();
         Map.render(map);
         Player.update();
+        Player.checkCollisions(map);
         Player.draw();
         Display.draw();
     }, 1000/60);

@@ -220,6 +220,10 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
                 this.score += 10;
                 this.y = 0;
                 map = Map.gen_map();
+                Colors.shuffle();
+                for (var i = 0; i < this.level; i++) {
+                    Colors.colors.pop();
+                }
             }
             // end of collision stuff?
         },
@@ -230,7 +234,9 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
                     if (!tile.walkable) {
                         if (this.distance(tile)) {
                             if (this.color == tile.color) {
-                                tile.color = 'black';
+                                this.score += 5;
+                                tile.color = 'rgba(0, 0, 0, .001)';
+                                tile.walkable = true;
                             }else{
                                 this.y = tile.y - this.radius;
                             }

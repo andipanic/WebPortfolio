@@ -6,24 +6,37 @@ html, body {
     padding: 0;
     margin: 0;
 }
+
+div#info {
+    float: left;
+    height: 100%;
+    width: 300px;
+    padding: 30px;
+}
+
 </style>
     </head>
     <body>
-        <div id='log'></div>
+        <div id='info'>
+            <h1>Color Crash!</h1>
+            <p>Use 'a' and 'd' or left and right arrows to move the ball.  Each level consists of 32 colors.  Touching the colored verticle line with the ball changes the balls color.  Match the balls color to the floors color to fall through.</p>
+            <p>As you fall through each set of floors, more color are added to the list of colors. The game is over when you run out of colors.</p>
+        </div>
     <script>
     var canvas = document.createElement('canvas');
     var c = canvas.getContext('2d');
     var SIZE = 32;
 
     canvas.width = SIZE * 16;
-    canvas.height = SIZE * SIZE;
+    canvas.height = SIZE * 16;
 
     c.fillStyle = 'black';
     c.fillRect(0, 0, canvas.width, canvas.height);
 
     document.body.appendChild(canvas);
     
-    var log_div = document.getElementById('log');
+    var log_div = document.createElement('div');
+    document.body.appendChild(log_div);
 
     function log(str) {
         log_div.innerHTML = '';
@@ -39,11 +52,13 @@ html, body {
         vx: 4,
         g: .1,
         color: 'rgba(255, 255, 255, 1)',
+        score: 0,
+        colors_collected: [],
+        level: 1,
         update: function () {
             this.vy += this.g;
             this.y += this.vy;
-            // the key down is throwing off our 
-            // direction switching.
+            // Tidy all the stuff below this up...
             if (KeyHandler.pressed[65] || KeyHandler.pressed[37]) {
                 this.x -= Math.abs(this.vx);
             }
@@ -51,16 +66,15 @@ html, body {
                 this.x += Math.abs(this.vx);
             }
             if (this.x + this.radius >= canvas.width) {
-                this.vx = -this.vx;
+                this.x = canvas.width - this.radius;
             }
             if (this.x - this.radius <= 0) {
-                this.vx = Math.abs(this.vx);
+                this.x = this.radius;
             }
             var colorBelow = c.getImageData(this.x, this.y + this.radius, 1, 1);
             var colorInside = c.getImageData(this.x, this.y, 1, 1);
             var [r, g, b, a] = colorBelow.data.slice(0, 4);
             if (r+g+b+a != 255 && r+g+b+a != 0 && Colors.buildRGBA(r,g,b,a) != this.color) {
-               //this.color = Colors.buildRGBA(r,g,b,a);
                 this.vy = 0;
                 this.g = 0;
             }else{
@@ -69,9 +83,14 @@ html, body {
             var [r, g, b, a] = colorInside.data.slice(0,4);
             if (this.x >= ColorChanger.x && this.x < ColorChanger.x + ColorChanger.width) {
                 this.color = Colors.buildRGBA(r,g,b,a);
+                if (!this.colors_collected.includes(this.color)){
+                    this.colors_collected.push(this.color);
+                }
                 Colors.shuffle();
             }
             if (r+g+b+a == 0){
+                this.level += 1;
+                this.score += 10;
                 this.y = 0;
                 map = Map.gen_map();
             }
@@ -177,19 +196,33 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
             c.fillRect(this.x, 0, this.width, canvas.height);
         },
         update: function () {
-            this.x += this.vx;
-            if (this.x <= 0) {
-                this.vx *= -this.vx;
-            }
-            if (this.x >= canvas.width) {
-                this.vx *= -this.vx;
-            }
+            this.x = Math.floor(Math.random() * canvas.width) - this.width;
             
             this.color = Colors.colors.pop();
         }
     }
 
+    var Display = {
+        draw: function () {
+            if (Colors.colors.length) {
+                c.font = '30px Ariel';
+                c.fillStyle = ColorChanger.color;
+                c.textAlign = 'start';
+                c.fillText(Colors.colors.length, 10, 30);
+                c.fillStyle = Player.colors_collected[Player.colors_collected.length-1] || 'white';
+                c.textAlign = 'end';
+                c.fillText(Player.colors_collected.length + Player.score, canvas.width - 10, 30);
+            }else{
+                c.font = '45px Ariel';
+                c.fillStyle = 'white';
+                c.textAlign = 'center';
+                c.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+            }
+        },
+ 
+    }
 
+    
     // Timer stuffs
     setInterval( function () {
         ColorChanger.update();
@@ -203,11 +236,8 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
         Map.render(map);
         Player.update();
         Player.draw();
-        if (Colors.colors.length) {
-            c.fillText(Colors.colors.length, 10, 10);
-        }else{
-            c.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
-        }
+        Display.draw();
+        log(Player.level);
     }, 1000/60);
 
     </script>

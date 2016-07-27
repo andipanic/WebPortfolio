@@ -208,15 +208,19 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
                 c.font = '30px Ariel';
                 c.fillStyle = ColorChanger.color;
                 c.textAlign = 'start';
-                c.fillText(Colors.colors.length, 10, 30);
+                c.fillText(Colors.colors.length, 8, 30);
                 c.fillStyle = Player.colors_collected[Player.colors_collected.length-1] || 'white';
                 c.textAlign = 'end';
-                c.fillText(Player.colors_collected.length + Player.score, canvas.width - 10, 30);
+                c.fillText((Player.colors_collected.length + Player.score), canvas.width - 8, 30);
+                c.fillStyle = 'black';
+                c.fillText(Player.level, canvas.width - 8, canvas.height - 6);
             }else{
                 c.font = '45px Ariel';
                 c.fillStyle = 'white';
                 c.textAlign = 'center';
                 c.fillText('Game Over!', canvas.width / 2, canvas.height / 2);
+                c.font = '30px Ariel';
+                c.fillText('Score: ' + (Player.score + Player.colors_collected.length), canvas.width / 2, (canvas.height / 2) + 50);
             }
         },
  
@@ -237,7 +241,6 @@ window.addEventListener('keyup', function (event) { KeyHandler.keyUp(event); }, 
         Player.update();
         Player.draw();
         Display.draw();
-        log(Player.level);
     }, 1000/60);
 
     </script>

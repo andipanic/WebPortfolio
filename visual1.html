@@ -1,0 +1,117 @@
+<html>
+    <head>
+<style>
+html, body {
+    padding: 0;
+    margin: 0;
+}
+</style>
+    </head>
+    <body>
+<script>
+var canvas = document.createElement('canvas');
+var c = canvas.getContext('2d');
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+c.fillStyle = 'black';
+c.fillRect(0, 0, canvas.width, canvas.height);
+
+function clear() {
+c.fillStyle = 'rgba(0, 0, 0, 0.15)';
+c.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+document.body.appendChild(canvas);
+
+function degToRad(degree) {
+    var factor = Math.PI/180;
+    return degree * factor;
+}
+
+function deg() {
+    this.started = false;
+    this.start = Math.random() * 360;
+    this.end = 360;
+    this.increment = function() {
+        if (this.started) {
+            if (this.current >= this.end) {
+                this.current = 0;
+            }
+            this.current += 1;
+            return this.current;
+        }else{
+            this.current = this.start;
+            this.started = true;
+            return this.current;
+        }
+    }
+}
+
+function circle_walker() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.size = Math.random() * canvas.width / 12;
+    this.color = color();
+    this.d = new deg();
+}
+
+circle_walker.prototype.draw = function () {
+    c.beginPath();
+    c.strokeStyle = this.color;
+    c.arc(this.x, this.y, this.size, degToRad(this.d.increment() - 1), degToRad(this.d.increment()));
+    c.stroke();
+}
+
+function particle() {
+    this.x = Math.random() * canvas.width;
+    this.y = Math.random() * canvas.height;
+    this.vx = Math.random() * 2 - 1;
+    this.vy = Math.random() * 2 - 1;
+    this.size = Math.random() * 1.7;
+    this.color = color();
+}
+
+function color() {
+    var letters = '0123456789ABCDEF'.split('');
+    var color = '#';
+    for (var i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+    }
+    return color;
+}
+
+particle.prototype.draw = function () {
+    this.x += this.vx;
+    this.y += this.vy;
+    this.size = Math.random() * 1.7;
+    if (Math.random() < '.1') {
+        this.vx = Math.random() * 2 - 1;
+        this.vy = Math.random() * 2 - 1; 
+    }
+    c.fillStyle = this.color;
+    c.fillRect(this.x, this.y, this.size, this.size);
+}
+
+walkers = []
+particles = []
+
+for (var i = 0; i < 100; i++) {
+    walkers.push(new circle_walker());
+    particles.push(new particle());
+}
+
+
+setInterval(function () {
+    clear();
+    for (var i in walkers) {
+        walkers[i].draw();
+    }
+    for (var i in particles) {
+        particles[i].draw();
+    }
+}, 1000/60);
+</script>
+</body>
+</head>

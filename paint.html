@@ -1,0 +1,38 @@
+<html>
+    <head></head>
+    <body>
+    <script>
+    var canvas = document.createElement('canvas');
+    var c = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    document.body.appendChild(canvas);
+
+    c.fillStyle = 'black';
+    c.fillRect(0, 0, canvas.width, canvas.height);
+    function colorize() {
+        for (var x = 0; x < canvas.width; x = x + 16) {
+            for (var y = 0; y < canvas.height; y = y + 16) {
+                c.fillStyle = color();
+                c.fillRect(x, y, 16, 16);
+            }
+        }
+    }
+
+    function color() {
+        var letters = '0123456789ABCDEF';
+        var color = '#';
+        for (var i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    setInterval(colorize, 1000/2);
+    
+
+    </script>
+    </body>
+</html>

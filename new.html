@@ -1,0 +1,128 @@
+<html>
+    <head>
+        <title>Title</title>
+<style>
+html, body {
+    padding: 0;
+    margin: 0;
+}
+</style>
+    </head>
+    <body>
+    <script>
+    var canvas = document.createElement('canvas');
+    var c = canvas.getContext('2d');
+
+    canvas.width = window.innerWidth,
+    canvas.height = window.innerHeight;
+
+    document.body.appendChild(canvas);
+
+    var Player = {
+        x: canvas.width / 2,
+        y: canvas.height / 2,
+        vx: 2,
+        vy: 2,
+        color: 'red',
+        size: 8,
+        update: function () {
+           
+            // Left
+            if( KeyHandler.pressed[37]) {
+                this.x -= this.vx;
+            }
+            // Up
+            if( KeyHandler.pressed[38] ) {
+                this.y -= this.vy;
+            }
+            // Right
+            if( KeyHandler.pressed[39] ) {
+                this.x += this.vx;
+            }
+            // Down
+            if( KeyHandler.pressed[40] ) {
+                this.y += this.vy;
+            }
+
+        },
+        draw: function () {
+            c.fillStyle = this.color;
+            c.fillRect(this.x, this.y, this.size, this.size);
+        }
+    }
+
+    var Block = {
+        x: null, 
+        y: null, 
+        vx: null, 
+        vy: null,
+        size: null,
+        init: function () {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.vx = Math.random() * 2;
+            this.vy = Math.random() * 2;
+            this.size = Math.random() * 32;
+        },
+        update: function () {
+            if (Math.floor(Math.random() * 2)){
+                this.x += this.vx;
+            }else{
+                this.x -= this.vx;
+            }
+            if (Math.floor(Math.random() * 2)){
+                this.y += this.vy;
+            }else{
+                this.y -= this.vy;
+            }
+        },
+        draw: function () {
+            c.fillStyle = 'white';
+            c.fillRect(this.x, this.y, this.size, this.size);
+
+        }
+    }
+
+    var Display = {
+        clear: function () {
+            c.fillStyle = 'black';
+            c.fillRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+
+
+    var KeyHandler = {
+        init: function () {
+            window.addEventListener('keydown', event =>  
+                    KeyHandler.keyDown(event), false);
+            window.addEventListener('keyup', event => 
+                    KeyHandler.keyUp(event), false);
+        },
+        pressed: [],
+        keyDown: function (e) {
+            this.pressed[e.keyCode] = true;
+            console.log(e.keyCode);
+        },
+        keyUp: function (e) {
+            this.pressed[e.keyCode] = false;
+        },
+    }
+
+    KeyHandler.init();
+
+    setInterval(function () {
+        Block.init();
+    }, 2000);
+
+    setInterval(function () {
+        Display.clear();
+        Player.update();
+        Player.draw();
+        Block.update();
+        Block.draw();
+    }, 1000/60);
+
+
+    </script>
+    </body>
+</html>
